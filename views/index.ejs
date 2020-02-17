@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Simple Group Chat on Node.js</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font: 13px Helvetica, Arial; }
+        form { background: black; padding: 3px; position: fixed; bottom: 0; width: 100%; border-color: #000; border-top-style: solid; border-top-width: 1px;}
+        form input { border-style: solid; border-width: 1px; padding: 10px; width: 85%; margin-right: .5%; }
+        form button { width: 9%; background: rgb(224, 224, 224); border: none; padding: 10px; margin-left: 2%; border-radius: 100%;}
+        #messages { list-style-type: none; margin: 0; padding: 0; }
+        #messages li { padding: 5px 10px; }
+        #messages li:nth-child(odd) { background: #eee; }
+    </style>
+    <script src="../../socket.io/socket.io.js"></script>
+    <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+  </head>
+  <body>
+    <ul id="messages"></ul>
+	<div id="typingTag"></div>
+    <form action="/" method="POST" id="chatForm">
+      <input id="txt" class="typefield" autocomplete="off" autofocus="on" oninput="isTyping()" placeholder="type your message here..." /><button>Send</button>
+    </form>
+    <script>
+			
+			var port = 3000;
+            var socket = io.connect('http://127.0.0.1:'+port);
+            
+			// ask username
+            var username = prompt('Please tell me your name');
+            socket.emit('username', username);
+		
+			var typingStatus = document.getElementById('typingTag');
+			var inputField = $('#txt');
+			
+            $('form').submit(function(e){
+                e.preventDefault();
+                socket.emit('chat_message', $('#txt').val());
+                $('#txt').val('');
+                return false;
+            });
+            
+			// append message
+            socket.on('chat_message', function(msg){
+                $('#messages').append($('<li>').html(msg));
+            });
+            
+			// append if someone is online / offline
+            socket.on('is_online', function(statusMsg) {
+                $('#messages').append($('<li>').html(statusMsg));
+            });
+			
+			socket.on('updateTyping', function(me, isTyping) {
+				if (isTyping === true) {
+					$('#typingTag').html("<i style='color:green;'>" + me + " is typing...</i>");
+				} else {
+					$('#typingTag').html('');
+				}
+			});
+			
+			inputField.on('keyup', function(event) {
+				socket.emit('typing', false);
+			});
+			
+			inputField.on('keydown', function(event) {
+				socket.emit('typing', true);
+			});
+		
+    </script>
+  </body>
+</html>
